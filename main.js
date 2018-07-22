@@ -22,6 +22,7 @@ let playerCanvasCtx = playerCanvas.getContext('2d');
 let pathArea = [];
 let numberMass = [];
 let pathMass = [];
+let frameRate =26;
 
 let area = [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -65,7 +66,7 @@ class sprite {
 
 
 class Creatures {
-    constructor(x,y,areaI,areaJ){
+    constructor(x,y,areaI,areaJ,spriteFrameCount,stepCountAtFrame, speed){
         this.animIteration = 0;
         this.animDirection = 'forward';
         this.keysDown = '';
@@ -78,6 +79,11 @@ class Creatures {
         this.pathY = 0;
         this.startX = x;
         this.startY = y;
+        this.curSprite =0;
+        this.step =0;
+        this.spriteFrameCount = spriteFrameCount;
+        this.stepCountAtFrame = stepCountAtFrame;
+        this.speed = speed;
 
     }
 
@@ -98,6 +104,14 @@ class Creatures {
     resetSecondKey () {
         this.secondKeyDown = false
     }
+    changeSprite(){
+        switch (true) {
+            case this.curSprite === this.spriteFrameCount: this.curSprite--; this.animDirection='backward'; break;
+            case this.curSprite === 0: this.curSprite++; this.animDirection='forward';break;
+            case this.animDirection ==='forward': this.curSprite++; break;
+            case this.animDirection ==='backward': this.curSprite--; break;
+        }
+    }
     move () {
         if(this.secondKeyDown) {
             switch (this.secondKeyDown) {
@@ -108,10 +122,10 @@ class Creatures {
             }
         }
         switch (this.keysDown) {
-            case 'up':    if(area[this.i-1][this.j] !==1 && this.pathX === 0)  {this.posY-=11; this.pathY -= 11;} if(this.pathY === -44) {this.i-=1; this.pathY =0} break;
-            case 'right': if(area[this.i][this.j+1] !==1 && this.pathY === 0)  {this.posX+=11; this.pathX += 11;} if(this.pathX === 44)  {this.j+=1; this.pathX =0} break;
-            case 'down':  if(area[this.i+1][this.j] !==1 && this.pathX === 0)  {this.posY+=11; this.pathY += 11;} if(this.pathY === 44)  {this.i+=1; this.pathY =0} break;
-            case 'left':  if(area[this.i][this.j-1] !==1 && this.pathY === 0)  {this.posX-=11; this.pathX -= 11;} if(this.pathX === -44) {this.j-=1; this.pathX =0} break;
+            case 'up':    if(area[this.i-1][this.j] !==1 && this.pathX === 0)  {this.posY-=this.speed; this.pathY -= this.speed;} if(this.pathY === -44 ) {this.i-=1; this.pathY =0} break;
+            case 'right': if(area[this.i][this.j+1] !==1 && this.pathY === 0)  {this.posX+=this.speed; this.pathX += this.speed;} if(this.pathX === 44 )  {this.j+=1; this.pathX =0} break;
+            case 'down':  if(area[this.i+1][this.j] !==1 && this.pathX === 0)  {this.posY+=this.speed; this.pathY += this.speed;} if(this.pathY === 44)  {this.i+=1; this.pathY =0} break;
+            case 'left':  if(area[this.i][this.j-1] !==1 && this.pathY === 0)  {this.posX-=this.speed; this.pathX -= this.speed;} if(this.pathX === -44) {this.j-=1; this.pathX =0} break;
         }
     }
 
@@ -120,22 +134,30 @@ class Creatures {
 
 
 class Ghost extends Creatures{
-    constructor (spriteMap,x,y,areaI,areaJ){
-        super(x,y ,areaI ,areaJ );
+    constructor (spriteMap,x,y,areaI,areaJ,spriteFrameCount,stepCountAtFrame,speed){
+        super(x,y ,areaI ,areaJ,spriteFrameCount,stepCountAtFrame,speed );
         this.rightAnim = [spriteMap[0][0],spriteMap[0][1]];
         this.leftAnim  = [spriteMap[1][0],spriteMap[1][1]];
-        this.downAnim  = [spriteMap[2][0],spriteMap[2][1]];
-        this.upAnim    = [spriteMap[3][0],spriteMap[3][1]];
+        this.downAnim  = [spriteMap[3][0],spriteMap[3][1]];
+        this.upAnim    = [spriteMap[2][0],spriteMap[2][1]];
     }
+
     animation() {
-        switch (this.keysDown) {
-            case 'right': return this.rightAnim;
-            case 'left':  return this.leftAnim;
-            case 'up':    return this.upAnim;
-            case 'down':  return this.downAnim;
-            default:      return this.rightAnim;
+        this.step++;
+        switch (true) {
+            case  this.step > this.stepCountAtFrame : this. step = 0; this.changeSprite();
         }
+
+        switch (this.keysDown) {
+            case 'right': return this.rightAnim[this.curSprite];
+            case 'left':  return this.leftAnim[this.curSprite];
+            case 'up':    return this.upAnim[this.curSprite];
+            case 'down':  return this.downAnim[this.curSprite];
+            default:      return this.rightAnim[this.curSprite];
+        }
+
     }
+
     findPath(endI,endJ) {
         pathArea = [
             ['w','w','w','w','w','w','w','w','w','w','w','w','w','w','w','w','w','w','w','w','w','w','w'],
@@ -195,21 +217,27 @@ class Ghost extends Creatures{
 }
 
 class Pacman extends Creatures{
-    constructor (spriteMap,x,y,areaI,areaJ){
-        super(x,y ,areaI ,areaJ );
+    constructor (spriteMap,x,y,areaI,areaJ,spriteFrameCount,stepCountAtFrame,speed){
+        super(x,y ,areaI ,areaJ,spriteFrameCount,stepCountAtFrame,speed );
         this.rightAnim = [spriteMap[0][0],spriteMap[1][1],spriteMap[1][2]];
         this.leftAnim  = [spriteMap[0][0],spriteMap[2][1],spriteMap[2][2]];
         this.downAnim  = [spriteMap[0][0],spriteMap[3][1],spriteMap[3][2]];
         this.upAnim    = [spriteMap[0][0],spriteMap[4][1],spriteMap[4][2]];
     }
     animation() {
-        switch (this.keysDown) {
-            case 'right': return this.rightAnim;
-            case 'left':  return this.leftAnim;
-            case 'up':    return this.upAnim;
-            case 'down':  return this.downAnim;
-            default:      return this.rightAnim;
+        this.step++;
+        switch (true) {
+            case  this.step > this.stepCountAtFrame : this. step = 0; this.changeSprite();
         }
+
+        switch (this.keysDown) {
+            case 'right': return this.rightAnim[this.curSprite];
+            case 'left':  return this.leftAnim[this.curSprite];
+            case 'up':    return this.upAnim[this.curSprite];
+            case 'down':  return this.downAnim[this.curSprite];
+            default:      return this.rightAnim[this.curSprite];
+        }
+
     }
     move(){
         this.tryEat();
@@ -264,33 +292,19 @@ function drawCreatures() {
 
     playerCanvasCtx.clearRect(0, 0, playerCanvas.width, playerCanvas.height);
     creaturesMap.forEach((creature, key, map) => {
-        let j = creature.animIteration;
-        // creature.findPath(19,21);
-        creature.move();
 
-        if (creature.animIteration > 1) {
-            creature.animDirection = 'backward';
-            creature.animIteration = 1;
-            j= 1;
-        } else if( creature.animIteration < 0 ) {
-            creature.animDirection = 'forward';
-            creature.animIteration = 1;
-            j = 1;
-        }
+    creature.move();
+
+
 
         let animate = creature.animation();
         playerCanvasCtx.drawImage(
-            animate[j].image,animate[j].sx,animate[j].sy,
-            animate[j].sprWidth,animate[j].sprHeight,
+            animate.image,animate.sx,animate.sy,
+            animate.sprWidth,animate.sprHeight,
             creature.posX,creature.posY,
-            animate[j].sizeX,animate[j].sizeY
+            animate.sizeX,animate.sizeY
         );
 
-        if(creature.animDirection ==='forward') {
-            creature.animIteration++;
-        } else {
-            creature.animIteration--;
-        }
     });
 
 }
@@ -309,7 +323,6 @@ function drawMap() {
         }
     }
 }
-let k =1;
 function drawPoints() {
 
     pointsCanvasCtx.clearRect(0, 0, pointsCanvas.width, pointsCanvas.height);
@@ -337,7 +350,7 @@ function drawPoints() {
 function start() {
     drawMap();
     drawPoints();
-    setInterval(loop,80);
+    setInterval(loop,frameRate);
 }
 
 function loop() {
@@ -366,8 +379,8 @@ window.onload  = function () {
     playerSprite.onload = function () { imageLoader('pacman') };
     redSprite.onload = function () { imageLoader('redGhost') };
 
-    creaturesMap.set('pacman', new Pacman(spriteParser(playerSprite,5,3),44,44*19,19,1));
-    creaturesMap.set('redGhost', new Ghost(spriteParser(redSprite,9,2),44,44,1,1));
+    creaturesMap.set('pacman', new Pacman(spriteParser(playerSprite,5,3),44,44*19,19,1,2,2,5.5));
+    creaturesMap.set('redGhost', new Ghost(spriteParser(redSprite,9,2),  44,44,    1,1,1,6, 4));
 };
 
 
