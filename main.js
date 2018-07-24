@@ -33,6 +33,7 @@ let redSprite      = new Image();
 let pinkSprite     = new Image();
 let yellowSprite   = new Image();
 let life = 2;
+let score = 0;
 
 let area = [];
 function resetArea() {
@@ -240,22 +241,20 @@ class Ghost extends Creatures{
                this.findPath(10, 10);
                if(this.i === 10 && this.j ===10){ this.needRun =false, this.itIsDead = false}
             } else {
-                switch (this.type) {
-                    case 'angry' : this.findPath(creaturesMap.get('pacman').i, creaturesMap.get('pacman').j); break;
-                    case 'dumb'  :
-                        if (this.getRandom(0,9) <=2 && this.pathX === 0  && this.pathY ===  0 ) {
-                            this.findPath(creaturesMap.get('pacman').i, creaturesMap.get('pacman').j)
-                        } else {
-                            this.tryMove(this.getRandom(0,3));
-                        } break;
-                    case 'fiftyFifty' :
-                        if (this.getRandom(0,9) <=5 && this.pathX === 0  && this.pathY ===  0 ) {
-                            this.findPath(creaturesMap.get('pacman').i, creaturesMap.get('pacman').j)
-                        } else {
-                            this.tryMove(this.getRandom(0,3));
-                        } break;
-                    case 'ifSees' : this.tryMove(this.getRandom(0,3)); break;
+                let i;
+                let j;
+                switch (true) {
+                    case this.i > creaturesMap.get('pacman').i : i =1; break;
+                    case this.i < creaturesMap.get('pacman').i : i =19; break;
+                    case this.i === creaturesMap.get('pacman').i :  this.getRandom(0,1) > 0 ? i = 1 : i =19;
                 }
+
+                switch (true) {
+                    case this.j > creaturesMap.get('pacman').j : j =21; break;
+                    case this.j < creaturesMap.get('pacman').j : j =1; break;
+                    case this.j === creaturesMap.get('pacman').j :  this.getRandom(0,1) > 0 ? j = 1 : j =21;
+                }
+                this.findPath(i, j);
             }
 
         }
@@ -331,6 +330,7 @@ class Ghost extends Creatures{
     }
 
     runAway () { this.needRun = true;}
+    stopRunAway () { this.needRun = false;}
 
     getRandom(min, max){
         return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -347,7 +347,7 @@ class Pacman extends Creatures{
         this.leftAnim  = [spriteMap[0][0],spriteMap[2][1],spriteMap[2][2]];
         this.downAnim  = [spriteMap[0][0],spriteMap[3][1],spriteMap[3][2]];
         this.upAnim    = [spriteMap[0][0],spriteMap[4][1],spriteMap[4][2]];
-        this.score = 0;
+        this.deadAnim  = [spriteMap[4][1],spriteMap[5][0],spriteMap[5][1],spriteMap[5][2],spriteMap[5][3],spriteMap[5][4],spriteMap[5][5],spriteMap[5][6],spriteMap[5][7]];
     }
 
     animation() {
@@ -355,13 +355,18 @@ class Pacman extends Creatures{
         switch (true) {
             case  this.step > this.stepCountAtFrame : this. step = 0; this.changeSprite();
         }
-        switch (this.keysDown) {
-            case 'up':    return this.upAnim[this.curSprite];
-            case 'left':  return this.leftAnim[this.curSprite];
-            case 'down':  return this.downAnim[this.curSprite];
-            case 'right': return this.rightAnim[this.curSprite];
-            default:      return this.rightAnim[this.curSprite];
+        if(!this.itIsDead) {
+            switch (this.keysDown) {
+                case 'up':    return this.upAnim[this.curSprite];
+                case 'left':  return this.leftAnim[this.curSprite];
+                case 'down':  return this.downAnim[this.curSprite];
+                case 'right': return this.rightAnim[this.curSprite];
+                default:      return this.rightAnim[this.curSprite];
+            }
+        } else {
+            return this.deadAnim[this.curSprite];
         }
+
     }
 
     move(){
@@ -374,22 +379,31 @@ class Pacman extends Creatures{
             for(let j = 0; j< area[i].length;j++) {
                 if(area[i][j]===2 && this.i === i && this.j === j  ) {
                     area[i][j] =0;
-                    this.score++;
-                    console.log(this.score);
-                    if(this.score === 202) alert('you win')
+                    score++;
+                    console.log(score);
+                    if(score === 10) alert('you win')
                 }
                 if(area[i][j]===3 && this.i === i && this.j === j  ) {
                     area[i][j] =0;
                     creaturesMap.forEach((creature, key, map) => {
                         if(key !== 'pacman') creature.runAway();
                     });
+                    setTimeout(catchPacman,4000);
                 }
             }
         }
 
     }
+    changeFrameCount(count) {
+        this.spriteFrameCount = count;
+    }
 }
 
+function catchPacman() {
+    creaturesMap.forEach((creature, key, map) => {
+        if(key !== 'pacman' && !creature.itIsDead) creature.stopRunAway();
+    });
+}
 
 function imageLoader (name) {
     let canStart = true;
@@ -414,12 +428,8 @@ function spriteParser(image,line,column) {
 
 
 function drawCreatures() {
-
     playerCanvasCtx.clearRect(0, 0, playerCanvas.width, playerCanvas.height);
     creaturesMap.forEach((creature, key, map) => {
-        creaturesCrush ();
-        creature.move();
-        creaturesCrush ();
 
         let animate = creature.animation();
         playerCanvasCtx.drawImage(
@@ -445,6 +455,7 @@ function creaturesCrush () {
                     creature.dead();
                 } else {
                     creaturesMap.get('pacman').dead();
+                    creaturesMap.get('pacman').changeFrameCount(8);
                 }
             }
         }
@@ -452,7 +463,6 @@ function creaturesCrush () {
 }
 
 function drawMap() {
-
     for (let i =0; i< area.length; i++) {
         for(let j = 0; j< area[i].length;j++) {
             if(area[i][j]===1) {
@@ -488,12 +498,13 @@ function drawPoints() {
 
 
 function start() {
-    creaturesMap.set('pacman',    new Pacman(spriteParser(playerSprite,5,3), 44,    44*19, 19,1,2,2, 5.5));
+    creaturesMap.set('pacman',    new Pacman(spriteParser(playerSprite,6,8), 44,    44*19, 19,1,2,2, 5.5));
 
-    creaturesMap.set('redGhost',    new Ghost(spriteParser(redSprite,9,2),   44,    44,    1, 1, 1,6, 4,'angry'));
-    creaturesMap.set('blueGhost',   new Ghost(spriteParser(blueSprite,9,2),  44*11, 44*9,  9, 11,1,6, 4,'dumb'));
+    creaturesMap.set('redGhost',    new Ghost(spriteParser(redSprite,9,2),   44*10, 44*11, 11,10,1,6, 4,'angry'));
     creaturesMap.set('pinkGhost',   new Ghost(spriteParser(pinkSprite,9,2),  44*10, 44*10, 10,10,1,6, 4,'fiftyFifty'));
     creaturesMap.set('yellowGhost', new Ghost(spriteParser(yellowSprite,9,2),44*12, 44*10, 10,12,1,6, 4,'fiftyFifty'));
+    creaturesMap.set('blueGhost',   new Ghost(spriteParser(blueSprite,9,2),  44*11, 44*9,  9, 11,1,6, 4,'dumb'));
+
 
     drawMap();
     drawPoints();
@@ -501,18 +512,31 @@ function start() {
 }
 
 function loop() {
-    drawCreatures();
-    drawPoints();
     if(!creaturesMap.get('pacman').itIsDead){
+        creaturesMap.forEach((creature, key, map) => { creature.move() });
+        creaturesCrush ();
+        drawCreatures();
+        drawPoints();
         setTimeout( loop,frameRate);
     } else {
-        setTimeout( start,150);
+        if(creaturesMap.get('pacman').curSprite <8){
+            setTimeout( loop,80);
+            drawCreatures();
+        }else {
+            setTimeout( start,180);
+
+        }
+
     }
 }
+
+
 
 function reset (){
     resetArea();
     life = 2;
+    score = 0;
+
 }
 
 
@@ -549,10 +573,10 @@ window.onload  = function () {
     imageStatusMap.set('yellowGhost',false);
 
     redSprite.src       = "images/red.png";
-    blueSprite.src      = "images/blue.png";
+    blueSprite.src      = "images/blue1.png";
     pinkSprite.src      = "images/pink.png";
     yellowSprite.src    = "images/yellow.png";
-    playerSprite.src    = "images/pacman.png";
+    playerSprite.src    = "images/newpacman.png";
     playerSprite.onload = function () { imageLoader('pacman') };
     redSprite.onload    = function () { imageLoader('redGhost') };
     blueSprite.onload   = function () { imageLoader('blueGhost') };
