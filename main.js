@@ -382,8 +382,7 @@ class Pacman extends Creatures{
                 if(area[i][j]===2 && this.i === i && this.j === j  ) {
                     area[i][j] =0;
                     score++;
-                    console.log(score);
-                    if(score === 202) gameOver = true;
+                    if(score === 202) {gameOver = true; setTimeout(intro,400)}
                 }
                 if(area[i][j]===3 && this.i === i && this.j === j  ) {
                     area[i][j] =0;
@@ -452,6 +451,8 @@ function creaturesCrush () {
                 } else {
                     creaturesMap.get('pacman').dead();
                     creaturesMap.get('pacman').changeFrameCount(8);
+                    life--;
+
                 }
             }
         }
@@ -468,6 +469,10 @@ function drawMap() {
             }
             backgroundCanvasCtx.fillRect(j*44, i*44, 44, 44);
         }
+    }
+    for (let i=1; i<life+1; i++){
+        console.log(i);
+        backgroundCanvasCtx.drawImage(playerSprite,316,158,158,158,i*33+11,20*44+9,25,25);
     }
 }
 function drawPoints() {
@@ -519,7 +524,11 @@ function loop() {
                 setTimeout( loop,50);
                 drawCreatures();
             }else {
-                setTimeout( start,180);
+                if(life === 0){gameOver =true;
+                    setTimeout(intro,200);
+                } else
+                {setTimeout( start,180);}
+
 
             }
         }
@@ -556,12 +565,15 @@ function checkNumber (number,i,j) {
 
 let introStep =0;
 function intro () {
+    if(gameOver){
     backgroundCanvasCtx.fillRect(0,0,canvasWidth,canvasHeight);
+    pointsCanvasCtx.clearRect(0,0,canvasWidth,canvasHeight);
+        playerCanvasCtx.clearRect(0,0,canvasWidth,canvasHeight);
     switch (introStep){
         case 0:   backgroundCanvasCtx.drawImage(press,canvasWidth/4,canvasHeight/2,); introStep++; break;
         case 1:   introStep = 0; break;
     }
-    if(gameOver){
+
         setTimeout(intro,700);
     }
 }
@@ -578,6 +590,8 @@ document.addEventListener("keydown", function(event){
         case 37: creaturesMap.get('pacman').setButton ('left');  break;
         case 40: creaturesMap.get('pacman').setButton ('down');  break;
         case 39: creaturesMap.get('pacman').setButton ('right'); break;
+
+        case 13:if(gameOver){ gameOver = false; reset()}; break;
     }
 });
 
