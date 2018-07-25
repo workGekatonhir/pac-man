@@ -32,8 +32,10 @@ let blueSprite     = new Image();
 let redSprite      = new Image();
 let pinkSprite     = new Image();
 let yellowSprite   = new Image();
+let press   = new Image();
 let life = 2;
 let score = 0;
+let gameOver = true;
 
 let area = [];
 function resetArea() {
@@ -381,7 +383,7 @@ class Pacman extends Creatures{
                     area[i][j] =0;
                     score++;
                     console.log(score);
-                    if(score === 10) alert('you win')
+                    if(score === 202) gameOver = true;
                 }
                 if(area[i][j]===3 && this.i === i && this.j === j  ) {
                     area[i][j] =0;
@@ -397,6 +399,7 @@ class Pacman extends Creatures{
     changeFrameCount(count) {
         this.spriteFrameCount = count;
     }
+
 }
 
 function catchPacman() {
@@ -405,14 +408,7 @@ function catchPacman() {
     });
 }
 
-function imageLoader (name) {
-    let canStart = true;
-    imageStatusMap.set(name, true);
-    imageStatusMap.forEach((val, key, map) => {
-        if(val === false ) canStart = false;
-    });
-    if(canStart) start();
-}
+
 
 function spriteParser(image,line,column) {
     let spriteArray = [[],[],[],[],[],[],[],[],[]];
@@ -448,7 +444,7 @@ function creaturesCrush () {
         if(key !=='pacman'){
 
             if (creaturesMap.get('pacman').posX+44 >= creature.posX+8 &&  creaturesMap.get('pacman').posX <= creature.posX+30 ) {xCrush =true }
-            if (creaturesMap.get('pacman').posY+44 >= creature.posY+8&&  creaturesMap.get('pacman').posY <= creature.posY+30 ) {yCrush =true }
+            if (creaturesMap.get('pacman').posY+44 >= creature.posY+8 &&  creaturesMap.get('pacman').posY <= creature.posY+30 ) {yCrush =true }
 
             if(yCrush && xCrush) {
                 if (creature.needRun) {
@@ -505,37 +501,39 @@ function start() {
     creaturesMap.set('yellowGhost', new Ghost(spriteParser(yellowSprite,9,2),44*12, 44*10, 10,12,1,6, 4,'fiftyFifty'));
     creaturesMap.set('blueGhost',   new Ghost(spriteParser(blueSprite,9,2),  44*11, 44*9,  9, 11,1,6, 4,'dumb'));
 
-
     drawMap();
     drawPoints();
     loop();
 }
 
 function loop() {
-    if(!creaturesMap.get('pacman').itIsDead){
-        creaturesMap.forEach((creature, key, map) => { creature.move() });
-        creaturesCrush ();
-        drawCreatures();
-        drawPoints();
-        setTimeout( loop,frameRate);
-    } else {
-        if(creaturesMap.get('pacman').curSprite <8){
-            setTimeout( loop,80);
+    if(!gameOver) {
+        if(!creaturesMap.get('pacman').itIsDead){
+            creaturesMap.forEach((creature, key, map) => { creature.move() });
+            creaturesCrush ();
             drawCreatures();
-        }else {
-            setTimeout( start,180);
+            drawPoints();
+            setTimeout( loop,frameRate);
+        } else {
+            if(creaturesMap.get('pacman').curSprite <8){
+                setTimeout( loop,50);
+                drawCreatures();
+            }else {
+                setTimeout( start,180);
 
+            }
         }
-
     }
 }
 
 
 
-function reset (){
+function reset() {
     resetArea();
     life = 2;
     score = 0;
+    gameOver = false;
+    start();
 
 }
 
@@ -556,12 +554,30 @@ function checkNumber (number,i,j) {
     return  number
 }
 
+let introStep =0;
+function intro () {
+    backgroundCanvasCtx.fillRect(0,0,canvasWidth,canvasHeight);
+    switch (introStep){
+        case 0:   backgroundCanvasCtx.drawImage(press,canvasWidth/4,canvasHeight/2,); introStep++; break;
+        case 1:   introStep = 0; break;
+    }
+    if(gameOver){
+        setTimeout(intro,700);
+    }
+}
+
+
 document.addEventListener("keydown", function(event){
     switch (event.keyCode) {
         case 87: creaturesMap.get('pacman').setButton ('up');    break;
         case 65: creaturesMap.get('pacman').setButton ('left');  break;
         case 83: creaturesMap.get('pacman').setButton ('down');  break;
         case 68: creaturesMap.get('pacman').setButton ('right'); break;
+
+        case 38: creaturesMap.get('pacman').setButton ('up');    break;
+        case 37: creaturesMap.get('pacman').setButton ('left');  break;
+        case 40: creaturesMap.get('pacman').setButton ('down');  break;
+        case 39: creaturesMap.get('pacman').setButton ('right'); break;
     }
 });
 
@@ -571,19 +587,30 @@ window.onload  = function () {
     imageStatusMap.set('blueGhost',false);
     imageStatusMap.set('pinkGhost',false);
     imageStatusMap.set('yellowGhost',false);
+    imageStatusMap.set('press',false);
 
     redSprite.src       = "images/red.png";
     blueSprite.src      = "images/blue1.png";
     pinkSprite.src      = "images/pink.png";
     yellowSprite.src    = "images/yellow.png";
     playerSprite.src    = "images/newpacman.png";
+    press.src    = "images/pressEnter.png";
     playerSprite.onload = function () { imageLoader('pacman') };
     redSprite.onload    = function () { imageLoader('redGhost') };
     blueSprite.onload   = function () { imageLoader('blueGhost') };
     pinkSprite.onload   = function () { imageLoader('pinkGhost') };
     yellowSprite.onload = function () { imageLoader('yellowGhost') };
+    press.onload = function () { imageLoader('press') };
 
     resetArea();
 };
 
+function imageLoader (name) {
+    let canStart = true;
+    imageStatusMap.set(name, true);
+    imageStatusMap.forEach((val, key, map) => {
+        if(val === false ) canStart = false;
+    });
+    if(canStart) intro();
+}
 
